@@ -10,4 +10,4 @@ This Power BI dashboard analyzes hospital emergency room data.
 
 ## Dashboard Screenshot
 
-![Dashboard](Final Dashboard of hospital Emergency Room.png)
+![Dashboard](Final%20Dashboard%20of%20hospital%20Emergency%20Room.png)
