@@ -1,6 +1,5 @@
 # Hosiptal-Emergency-Room-Dashbord
 </> Markdown
-# Hospital Emergency Room Dashboard
 
 ## Project Overview
 This Power BI dashboard analyzes hospital emergency room data.
@@ -11,4 +10,4 @@ This Power BI dashboard analyzes hospital emergency room data.
 
 ## Dashboard Screenshot
 
-![Dashboard](dashboard.png)
+![Dashboard](Final Dashboard of hospital Emergency Room.png)
