@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Hospital Emergency Room Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #e8edf2;
+    min-height: 100vh;
+    padding: 12px;
+  }
+
+  .dashboard {
+    max-width: 1280px;
+    margin: 0 auto;
+    background: #dde3ea;
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.13);
+  }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .logo {
+    background: #1a6fa8;
+    border-radius: 10px;
+    width: 56px; height: 56px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    flex-shrink: 0;
+  }
+  .title-box {
+    background: #fff;
+    border-radius: 8px;
+    padding: 6px 18px;
+    text-align: center;
+  }
+  .title-box h1 { font-size: 15px; font-weight: 700; color: #1a2636; }
+  .title-box p  { font-size: 12px; color: #555; }
+
+  .year-toggle {
+    display: flex; gap: 8px; margin-left: auto;
+  }
+  .year-btn {
+    padding: 8px 28px;
+    border: 2px solid #c0c8d0;
+    border-radius: 8px;
+    font-size: 15px; font-weight: 700;
+    cursor: pointer;
+    background: #fff;
+    color: #1a2636;
+    transition: all .2s;
+  }
+  .year-btn.active {
+    background: #f4c5a8;
+    border-color: #e07a3a;
+    color: #b84e00;
+  }
+
+  /* MAIN GRID */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 68px 1fr 320px;
+    gap: 12px;
+  }
+
+  /* MONTH SIDEBAR */
+  .month-sidebar {
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .month-btn {
+    background: #c5cdd6;
+    border: none; border-radius: 6px;
+    padding: 7px 6px;
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+    color: #1a2636;
+    transition: all .18s;
+    text-align: center;
+  }
+  .month-btn:hover { background: #b0bac5; }
+  .month-btn.active {
+    background: #f4a97a;
+    color: #fff;
+  }
+
+  /* CENTER PANEL */
+  .center-panel { display: flex; flex-direction: column; gap: 12px; }
+
+  /* KPI ROW */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .kpi-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 14px 16px 8px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+  }
+  .kpi-icon {
+    position: absolute; top: 10px; right: 14px;
+    font-size: 22px; opacity: .5;
+  }
+  .kpi-value { font-size: 26px; font-weight: 800; color: #1a2636; }
+  .kpi-label { font-size: 11px; color: #666; margin-top: 2px; font-weight: 500; }
+  .kpi-sparkline { margin-top: 8px; height: 38px; }
+
+  /* ADMISSION TABLE */
+  .admission-table {
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+  }
+  .admission-table table { width: 100%; border-collapse: collapse; }
+  .admission-table th {
+    background: #2b6fa8;
+    color: #fff;
+    font-size: 12px;
+    padding: 9px 14px;
+    text-align: left;
+  }
+  .admission-table td {
+    padding: 9px 14px;
+    font-size: 13px;
+    color: #1a2636;
+    border-bottom: 1px solid #eee;
+  }
+  .admission-table tr:last-child td { border-bottom: none; }
+  .bar-cell { position: relative; }
+  .bar-bg { background: #e0e8f0; border-radius: 4px; height: 14px; width: 140px; display: inline-block; vertical-align: middle; }
+  .bar-fill { height: 14px; border-radius: 4px; display: inline-block; }
+  .bar-label { font-size: 11px; margin-left: 6px; color: #555; }
+
+  /* AGE CHART */
+  .age-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 14px 16px 10px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+  }
+  .age-card h3 { font-size: 12px; color: #555; text-align: center; margin-top: 8px; font-weight: 600; }
+  .age-chart-wrap { height: 130px; }
+
+  /* RIGHT PANEL */
+  .right-panel { display: flex; flex-direction: column; gap: 12px; }
+
+  .pie-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .pie-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 12px 8px 8px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+    text-align: center;
+  }
+  .pie-card h3 { font-size: 11px; color: #555; margin-top: 6px; font-weight: 600; }
+  .pie-wrap { height: 120px; position: relative; }
+
+  .dept-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+    flex: 1;
+  }
+  .dept-card h3 { font-size: 12px; color: #555; text-align: center; margin-bottom: 10px; font-weight: 600; }
+  .dept-row { display: flex; align-items: center; margin-bottom: 7px; gap: 8px; }
+  .dept-name { font-size: 11px; color: #444; width: 110px; text-align: right; flex-shrink: 0; }
+  .dept-bar-wrap { flex: 1; background: #e8edf2; border-radius: 4px; height: 16px; overflow: hidden; }
+  .dept-bar { height: 16px; background: #1a6fa8; border-radius: 4px; transition: width .6s ease; }
+  .dept-val { font-size: 11px; color: #1a2636; font-weight: 700; width: 28px; text-align: right; }
+
+  /* legend */
+  .legend { display: flex; gap: 10px; justify-content: center; margin-bottom: 4px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+  .legend-item { font-size: 10px; color: #444; display: flex; align-items: center; }
+</style>
+</head>
+<body>
+<div class="dashboard">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo">🏥</div>
+    <div class="title-box">
+      <h1>Hospital Emergency Room Dashboard</h1>
+      <p>Monthly Report</p>
+    </div>
+    <div class="year-toggle">
+      <button class="year-btn" onclick="setYear(2023)" id="btn2023">2023</button>
+      <button class="year-btn active" onclick="setYear(2024)" id="btn2024">2024</button>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+
+    <!-- MONTH SIDEBAR -->
+    <div class="month-sidebar">
+      <button class="month-btn active" onclick="setMonth(this,'Jan')">Jan</button>
+      <button class="month-btn" onclick="setMonth(this,'Feb')">Feb</button>
+      <button class="month-btn" onclick="setMonth(this,'Mar')">Mar</button>
+      <button class="month-btn" onclick="setMonth(this,'Apr')">Apr</button>
+      <button class="month-btn" onclick="setMonth(this,'May')">May</button>
+      <button class="month-btn" onclick="setMonth(this,'Jun')">Jun</button>
+      <button class="month-btn" onclick="setMonth(this,'Jul')">Jul</button>
+      <button class="month-btn" onclick="setMonth(this,'Aug')">Aug</button>
+      <button class="month-btn" onclick="setMonth(this,'Sep')">Sep</button>
+      <button class="month-btn" onclick="setMonth(this,'Oct')">Oct</button>
+      <button class="month-btn" onclick="setMonth(this,'Nov')">Nov</button>
+      <button class="month-btn" onclick="setMonth(this,'Dec')">Dec</button>
+    </div>
+
+    <!-- CENTER -->
+    <div class="center-panel">
+
+      <!-- KPI -->
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <span class="kpi-icon">👤</span>
+          <div class="kpi-value" id="kpiPatients">154</div>
+          <div class="kpi-label">No. of Patients</div>
+          <div class="kpi-sparkline"><canvas id="sparkPatients"></canvas></div>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-icon">⏳</span>
+          <div class="kpi-value" id="kpiWait">35.27</div>
+          <div class="kpi-label">Avg. Wait Time (min)</div>
+          <div class="kpi-sparkline"><canvas id="sparkWait"></canvas></div>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-icon">⭐</span>
+          <div class="kpi-value" id="kpiScore">4.80</div>
+          <div class="kpi-label">Patient Satisfaction Score</div>
+          <div class="kpi-sparkline"><canvas id="sparkScore"></canvas></div>
+        </div>
+      </div>
+
+      <!-- ADMISSION TABLE -->
+      <div class="admission-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Admission Status</th>
+              <th>No. of Patient</th>
+              <th>% Status</th>
+              <th style="width:180px"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Not Admitted</td>
+              <td id="notAdmit">72</td>
+              <td id="notAdmitPct">46.75%</td>
+              <td class="bar-cell">
+                <div class="bar-bg">
+                  <div class="bar-fill" id="barNotAdmit" style="width:46.75%;background:#e07a3a;"></div>
+                </div>
+                <span class="bar-label" id="barNotAdmitLbl">46.75%</span>
+              </td>
+            </tr>
+            <tr>
+              <td>Admitted</td>
+              <td id="admit">82</td>
+              <td id="admitPct">53.25%</td>
+              <td class="bar-cell">
+                <div class="bar-bg">
+                  <div class="bar-fill" id="barAdmit" style="width:53.25%;background:#1a6fa8;"></div>
+                </div>
+                <span class="bar-label" id="barAdmitLbl">53.25%</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- AGE CHART -->
+      <div class="age-card">
+        <div class="age-chart-wrap"><canvas id="ageChart"></canvas></div>
+        <h3>No. of Patients by Age Group</h3>
+      </div>
+
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+
+      <!-- PIE CHARTS -->
+      <div class="pie-row">
+        <div class="pie-card">
+          <div class="legend">
+            <span class="legend-item"><span class="legend-dot" style="background:#1a6fa8"></span>Delay</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#e07a3a"></span>Ontime</span>
+          </div>
+          <div class="pie-wrap"><canvas id="attendChart"></canvas></div>
+          <h3>Patient Attend Status</h3>
+        </div>
+        <div class="pie-card">
+          <div class="legend">
+            <span class="legend-item"><span class="legend-dot" style="background:#1a6fa8"></span>Female</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#e07a3a"></span>Male</span>
+          </div>
+          <div class="pie-wrap"><canvas id="genderChart"></canvas></div>
+          <h3>Gender Wise Analysis</h3>
+        </div>
+      </div>
+
+      <!-- DEPARTMENT CHART -->
+      <div class="dept-card">
+        <h3>No. of Patient by Department Referral</h3>
+        <div id="deptBars"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────
+const DATA = {
+  2023: {
+    Jan: { patients:138, wait:38.1, score:4.65, notAdmit:60, admit:78,
+           age:[14,12,20,19,11,18,17,15], attend:[62,38], gender:[48,52],
+           dept:{None:85,GeneralPractice:28,Orthopedics:9,Cardiology:5,Physiotherapy:3,Gastroenterology:3,Neurology:2,Renal:1} },
+    Feb: { patients:142, wait:36.5, score:4.70, notAdmit:65, admit:77,
+           age:[13,11,22,20,13,19,18,16], attend:[60,40], gender:[47,53],
+           dept:{None:88,GeneralPractice:29,Orthopedics:10,Cardiology:6,Physiotherapy:3,Gastroenterology:3,Neurology:2,Renal:1} },
+    Mar: { patients:160, wait:34.2, score:4.75, notAdmit:70, admit:90,
+           age:[15,14,24,22,14,20,19,16], attend:[58,42], gender:[50,50],
+           dept:{None:90,GeneralPractice:32,Orthopedics:12,Cardiology:7,Physiotherapy:4,Gastroenterology:4,Neurology:3,Renal:1} },
+    Apr: { patients:148, wait:37.0, score:4.60, notAdmit:68, admit:80,
+           age:[14,13,21,19,12,19,18,15], attend:[63,37], gender:[49,51],
+           dept:{None:86,GeneralPractice:30,Orthopedics:10,Cardiology:6,Physiotherapy:3,Gastroenterology:3,Neurology:2,Renal:1} },
+    May: { patients:155, wait:35.8, score:4.72, notAdmit:71, admit:84,
+           age:[16,14,23,21,13,20,18,16], attend:[61,39], gender:[48,52],
+           dept:{None:89,GeneralPractice:31,Orthopedics:11,Cardiology:6,Physiotherapy:4,Gastroenterology:3,Neurology:2,Renal:1} },
+    Jun: { patients:163, wait:33.9, score:4.78, notAdmit:74, admit:89,
+           age:[17,15,25,23,14,21,19,17], attend:[59,41], gender:[51,49],
+           dept:{None:92,GeneralPractice:33,Orthopedics:12,Cardiology:7,Physiotherapy:4,Gastroenterology:4,Neurology:3,Renal:2} },
+    Jul: { patients:170, wait:32.5, score:4.82, notAdmit:78, admit:92,
+           age:[18,16,26,24,15,22,20,18], attend:[57,43], gender:[50,50],
+           dept:{None:95,GeneralPractice:34,Orthopedics:13,Cardiology:8,Physiotherapy:4,Gastroenterology:4,Neurology:3,Renal:2} },
+    Aug: { patients:158, wait:34.8, score:4.68, notAdmit:72, admit:86,
+           age:[15,13,23,21,13,20,18,16], attend:[61,39], gender:[49,51],
+           dept:{None:88,GeneralPractice:30,Orthopedics:11,Cardiology:6,Physiotherapy:3,Gastroenterology:3,Neurology:2,Renal:1} },
+    Sep: { patients:145, wait:36.9, score:4.62, notAdmit:66, admit:79,
+           age:[14,12,21,19,12,19,17,15], attend:[62,38], gender:[48,52],
+           dept:{None:84,GeneralPractice:29,Orthopedics:10,Cardiology:6,Physiotherapy:3,Gastroenterology:3,Neurology:2,Renal:1} },
+    Oct: { patients:152, wait:35.5, score:4.73, notAdmit:69, admit:83,
+           age:[15,13,22,20,13,20,18,16], attend:[60,40], gender:[49,51],
+           dept:{None:87,GeneralPractice:31,Orthopedics:11,Cardiology:6,Physiotherapy:3,Gastroenterology:3,Neurology:2,Renal:1} },
+    Nov: { patients:147, wait:37.2, score:4.66, notAdmit:67, admit:80,
+           age:[14,12,21,19,12,18,17,15], attend:[63,37], gender:[48,52],
+           dept:{None:85,GeneralPractice:29,Orthopedics:10,Cardiology:6,Physiotherapy:3,Gastroenterology:3,Neurology:2,Renal:1} },
+    Dec: { patients:141, wait:38.5, score:4.58, notAdmit:63, admit:78,
+           age:[13,11,20,18,11,18,16,14], attend:[64,36], gender:[47,53],
+           dept:{None:83,GeneralPractice:28,Orthopedics:9,Cardiology:5,Physiotherapy:3,Gastroenterology:2,Neurology:2,Renal:1} },
+  },
+  2024: {
+    Jan: { patients:154, wait:35.27, score:4.80, notAdmit:72, admit:82,
+           age:[17,15,24,23,14,22,20,19], attend:[61,39], gender:[49,51],
+           dept:{None:93,GeneralPractice:31,Orthopedics:11,Cardiology:7,Physiotherapy:4,Gastroenterology:4,Neurology:3,Renal:1} },
+    Feb: { patients:148, wait:36.1, score:4.77, notAdmit:68, admit:80,
+           age:[15,13,22,21,13,21,19,17], attend:[60,40], gender:[50,50],
+           dept:{None:90,GeneralPractice:30,Orthopedics:10,Cardiology:6,Physiotherapy:3,Gastroenterology:3,Neurology:2,Renal:1} },
+    Mar: { patients:167, wait:33.5, score:4.85, notAdmit:76, admit:91,
+           age:[18,16,26,24,15,23,21,18], attend:[58,42], gender:[51,49],
+           dept:{None:96,GeneralPractice:33,Orthopedics:13,Cardiology:8,Physiotherapy:5,Gastroenterology:4,Neurology:3,Renal:2} },
+    Apr: { patients:155, wait:35.9, score:4.72, notAdmit:71, admit:84,
+           age:[16,14,23,22,14,22,20,18], attend:[61,39], gender:[49,51],
+           dept:{None:91,GeneralPractice:31,Orthopedics:11,Cardiology:7,Physiotherapy:4,Gastroenterology:3,Neurology:3,Renal:1} },
+    May: { patients:162, wait:34.2, score:4.83, notAdmit:74, admit:88,
+           age:[17,15,25,23,14,22,20,18], attend:[59,41], gender:[50,50],
+           dept:{None:94,GeneralPractice:32,Orthopedics:12,Cardiology:7,Physiotherapy:4,Gastroenterology:4,Neurology:3,Renal:2} },
+    Jun: { patients:171, wait:32.8, score:4.88, notAdmit:78, admit:93,
+           age:[19,17,27,25,16,24,21,19], attend:[57,43], gender:[52,48],
+           dept:{None:98,GeneralPractice:35,Orthopedics:14,Cardiology:8,Physiotherapy:5,Gastroenterology:5,Neurology:3,Renal:2} },
+    Jul: { patients:178, wait:31.5, score:4.92, notAdmit:81, admit:97,
+           age:[20,18,28,26,16,25,22,20], attend:[56,44], gender:[51,49],
+           dept:{None:102,GeneralPractice:36,Orthopedics:15,Cardiology:9,Physiotherapy:5,Gastroenterology:5,Neurology:4,Renal:2} },
+    Aug: { patients:165, wait:33.9, score:4.79, notAdmit:75, admit:90,
+           age:[17,15,25,23,14,23,20,18], attend:[59,41], gender:[50,50],
+           dept:{None:94,GeneralPractice:32,Orthopedics:12,Cardiology:7,Physiotherapy:4,Gastroenterology:4,Neurology:3,Renal:1} },
+    Sep: { patients:151, wait:36.5, score:4.71, notAdmit:69, admit:82,
+           age:[15,13,23,21,13,21,19,17], attend:[62,38], gender:[49,51],
+           dept:{None:88,GeneralPractice:30,Orthopedics:11,Cardiology:6,Physiotherapy:3,Gastroenterology:3,Neurology:2,Renal:1} },
+    Oct: { patients:159, wait:34.8, score:4.81, notAdmit:73, admit:86,
+           age:[16,14,24,22,14,22,20,18], attend:[60,40], gender:[50,50],
+           dept:{None:92,GeneralPractice:32,Orthopedics:12,Cardiology:7,Physiotherapy:4,Gastroenterology:4,Neurology:3,Renal:1} },
+    Nov: { patients:153, wait:36.0, score:4.74, notAdmit:70, admit:83,
+           age:[15,14,23,21,13,21,19,17], attend:[61,39], gender:[49,51],
+           dept:{None:89,GeneralPractice:30,Orthopedics:11,Cardiology:6,Physiotherapy:3,Gastroenterology:3,Neurology:2,Renal:1} },
+    Dec: { patients:146, wait:37.8, score:4.67, notAdmit:66, admit:80,
+           age:[14,12,21,19,12,20,18,16], attend:[63,37], gender:[48,52],
+           dept:{None:86,GeneralPractice:29,Orthopedics:10,Cardiology:6,Physiotherapy:3,Gastroenterology:3,Neurology:2,Renal:1} },
+  }
+};
+
+let currentYear = 2024;
+let currentMonth = 'Jan';
+let sparkP, sparkW, sparkS, ageC, attendC, genderC;
+
+function getD() { return DATA[currentYear][currentMonth]; }
+
+function setYear(y) {
+  currentYear = y;
+  document.getElementById('btn2023').classList.toggle('active', y===2023);
+  document.getElementById('btn2024').classList.toggle('active', y===2024);
+  updateAll();
+}
+
+function setMonth(btn, m) {
+  currentMonth = m;
+  document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  updateAll();
+}
+
+function updateAll() {
+  const d = getD();
+  // KPIs
+  document.getElementById('kpiPatients').textContent = d.patients;
+  document.getElementById('kpiWait').textContent = d.wait.toFixed(2);
+  document.getElementById('kpiScore').textContent = d.score.toFixed(2);
+
+  // Admission
+  const total = d.notAdmit + d.admit;
+  const naPct = (d.notAdmit/total*100).toFixed(2);
+  const aPct  = (d.admit/total*100).toFixed(2);
+  document.getElementById('notAdmit').textContent = d.notAdmit;
+  document.getElementById('admit').textContent = d.admit;
+  document.getElementById('notAdmitPct').textContent = naPct+'%';
+  document.getElementById('admitPct').textContent = aPct+'%';
+  document.getElementById('barNotAdmit').style.width = naPct+'%';
+  document.getElementById('barAdmit').style.width = aPct+'%';
+  document.getElementById('barNotAdmitLbl').textContent = naPct+'%';
+  document.getElementById('barAdmitLbl').textContent = aPct+'%';
+
+  // Age chart
+  ageC.data.datasets[0].data = d.age;
+  ageC.update();
+
+  // Attend pie
+  attendC.data.datasets[0].data = d.attend;
+  attendC.update();
+
+  // Gender pie
+  genderC.data.datasets[0].data = d.gender;
+  genderC.update();
+
+  // Dept bars
+  renderDept(d.dept);
+
+  // Sparklines
+  updateSparklines();
+}
+
+function sparkLine(canvasId, color) {
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  return new Chart(ctx, {
+    type: 'line',
+    data: { labels: Array(12).fill(''), datasets: [{ data: [], borderColor: color, borderWidth: 2, pointRadius: 0, fill: true, backgroundColor: color+'22', tension: 0.4 }] },
+    options: { animation: false, plugins:{legend:{display:false}}, scales:{x:{display:false},y:{display:false}}, responsive:true, maintainAspectRatio:false }
+  });
+}
+
+function updateSparklines() {
+  const months = Object.keys(DATA[currentYear]);
+  sparkP.data.datasets[0].data = months.map(m=>DATA[currentYear][m].patients);
+  sparkW.data.datasets[0].data = months.map(m=>DATA[currentYear][m].wait);
+  sparkS.data.datasets[0].data = months.map(m=>DATA[currentYear][m].score);
+  sparkP.data.labels = months; sparkW.data.labels = months; sparkS.data.labels = months;
+  sparkP.update(); sparkW.update(); sparkS.update();
+}
+
+function renderDept(dept) {
+  const entries = Object.entries(dept).sort((a,b)=>b[1]-a[1]);
+  const max = entries[0][1];
+  const container = document.getElementById('deptBars');
+  container.innerHTML = entries.map(([name,val])=>`
+    <div class="dept-row">
+      <div class="dept-name">${name.replace(/([A-Z])/g,' $1').trim()}</div>
+      <div class="dept-bar-wrap">
+        <div class="dept-bar" style="width:${(val/max*100).toFixed(1)}%"></div>
+      </div>
+      <div class="dept-val">${val}</div>
+    </div>
+  `).join('');
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  // Age chart
+  ageC = new Chart(document.getElementById('ageChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: ['0-09','10-19','20-29','30-39','40-49','50-59','60-69','70-79'],
+      datasets: [{ data: [], backgroundColor: '#1a6fa8', borderRadius: 4 }]
+    },
+    options: {
+      plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{display:false}},
+      responsive:true, maintainAspectRatio:false
+    }
+  });
+
+  // Attend pie
+  attendC = new Chart(document.getElementById('attendChart').getContext('2d'), {
+    type: 'doughnut',
+    data: { labels:['Delay','Ontime'], datasets:[{ data:[], backgroundColor:['#1a6fa8','#e07a3a'], borderWidth:0 }] },
+    options: { plugins:{legend:{display:false}}, responsive:true, maintainAspectRatio:false, cutout:'55%' }
+  });
+
+  // Gender pie
+  genderC = new Chart(document.getElementById('genderChart').getContext('2d'), {
+    type: 'doughnut',
+    data: { labels:['Female','Male'], datasets:[{ data:[], backgroundColor:['#1a6fa8','#e07a3a'], borderWidth:0 }] },
+    options: { plugins:{legend:{display:false}}, responsive:true, maintainAspectRatio:false, cutout:'55%' }
+  });
+
+  // Sparklines
+  sparkP = sparkLine('sparkPatients','#1a6fa8');
+  sparkW = sparkLine('sparkWait','#e07a3a');
+  sparkS = sparkLine('sparkScore','#2aa87a');
+
+  updateAll();
+});
+</script>
+</body>
+</html>
